@@ -1,11 +1,9 @@
 # Metabase MCP Server
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub](https://img.shields.io/badge/GitHub-easecloudio%2Fmcp--metabase--server-blue)](https://github.com/easecloudio/mcp-metabase-server)
+[![GitHub](https://img.shields.io/badge/GitHub-Daniel--Wata%2Fmcp--metabase--server-blue)](https://github.com/Daniel-Wata/mcp-metabase-server)
 
-A comprehensive **Model Context Protocol (MCP) server for Metabase integration**, designed for enterprises and developers who want to supercharge their AI assistants with live analytics and business intelligence.
-
-**Developed and maintained by [EaseCloud](https://easecloud.io)** — your trusted partner for **cloud-native, AI-driven, and data infrastructure solutions.**
+A fork of [@easecloudio/mcp-metabase-server](https://github.com/easecloudio/mcp-metabase-server) with additional tools for card/dashboard duplication and retrieval.
 
 This is a TypeScript-based MCP server that implements full integration with Metabase API. It allows AI assistants to interact with Metabase, providing comprehensive access to:
 
@@ -29,14 +27,13 @@ This MCP server is compatible with:
 
 **Note:** Some advanced features may require newer Metabase versions. For optimal compatibility, we recommend using Metabase v0.48.0 or later.
 
-## Why We Built This
+## Fork Changes
 
-At EaseCloud, we help companies modernize their data platforms and unlock the power of AI.  
-Metabase is a leading open-source BI tool — but connecting it with AI assistants like Claude, Cursor, and Windsurf requires complex API work.  
+This fork adds the following tools on top of the upstream server:
 
-This MCP server removes that barrier by providing **70+ ready-to-use tools** that cover everything from dashboards to queries, permissions to monitoring.  
-
-Our goal is to make **enterprise analytics accessible in natural language** while showcasing our expertise in **integration, automation, and cloud solutions.**
+- **`get_card`** — Retrieve full details of a single card/question, including its query, display type, and visualization settings.
+- **`duplicate_card`** — Copy a card to the same or a different collection.
+- **`duplicate_dashboard`** — Deep-copy a dashboard and all its cards into a target collection. Creates independent copies of every card, preserves layout (positions/sizes), filters, and filter wiring. The copied dashboard has zero references to the original cards.
 
 ## Features
 
@@ -61,6 +58,7 @@ Our goal is to make **enterprise analytics accessible in natural language** whil
 - `update_dashboard` - Update an existing dashboard
 - `delete_dashboard` - Delete/archive a dashboard
 - `get_dashboard_cards` - Get all cards in a dashboard
+- `duplicate_dashboard` - Deep-copy a dashboard and all its cards into a target collection
 
 #### Card/Question Management
 
@@ -68,6 +66,8 @@ Our goal is to make **enterprise analytics accessible in natural language** whil
 - `create_card` - Create a new question/card
 - `update_card` - Update an existing question/card
 - `delete_card` - Delete/archive a question/card
+- `get_card` - Get full details of a card (query, display type, visualization settings)
+- `duplicate_card` - Duplicate a card, optionally into a different collection
 - `execute_card` - Execute a card and get results
 
 #### Database Operations
@@ -250,7 +250,7 @@ Or run from the built project:
 
 ```bash
 # Clone and build the project
-git clone https://github.com/easecloudio/mcp-metabase-server.git
+git clone https://github.com/Daniel-Wata/mcp-metabase-server.git
 cd mcp-metabase-server
 npm install
 npm run build
@@ -414,50 +414,10 @@ After configuring the environment variables as described in the "Configuration" 
   2.  Attempt to start the server.
   3.  The server should fail to start and log an error message stating that authentication credentials (either API key or username/password) are required (e.g., "Either (METABASE_URL and METABASE_API_KEY) or (METABASE_URL, METABASE_USERNAME, and METABASE_PASSWORD) environment variables are required").
 
-## About EaseCloud
-
-EaseCloud is a cloud consulting and solutions company specializing in:
-- Cloud-native application development
-- AI & automation integrations
-- DevOps and infrastructure management
-- Data analytics and BI platform consulting
-
-We built this project to contribute to the open-source MCP ecosystem while demonstrating our deep expertise in **data-driven decision systems.**  
-
-👉 If your team is adopting Metabase at scale or looking to integrate AI with your BI stack, [get in touch with us](https://easecloud.io) — we provide **consulting, customization, and managed support** for enterprises.
-
----
-
-💡 **Work with EaseCloud**  
-Need help deploying, customizing, or scaling Metabase in production?  
-We provide end-to-end support for BI, AI, and cloud infrastructure.  
-
-📧 Contact us: [support@easecloud.io](mailto:support@easecloud.io)  
-🌐 Learn more: [https://easecloud.io](https://easecloud.io)
-
----
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## Upstream
 
-For support, please contact us at [support@easecloud.io](mailto:support@easecloud.io) or visit our website at [EaseCloud.io](https://easecloud.io).
-
-## Bug Reports & Issues
-
-Found a bug or have a feature request? We'd love to hear from you!
-
-🐛 **Report Issues**: [Create a bug report on GitHub](https://github.com/easecloudio/mcp-metabase-server/issues)
-
-When reporting issues, please include:
-- Metabase version you're using
-- MCP server version
-- Steps to reproduce the issue
-- Expected vs actual behavior
-- Any error messages or logs
-
-## Contributing
-
-Contributions are welcome! Please visit our [GitHub repository](https://github.com/easecloudio/mcp-metabase-server) to submit issues or pull requests.
+Originally developed by [EaseCloud](https://easecloud.io) — see the [upstream repository](https://github.com/easecloudio/mcp-metabase-server).
