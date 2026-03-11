@@ -612,10 +612,11 @@ export class DashboardToolHandlers {
       } catch (altError) {
         // Approach 3: Update dashboard without the card
         const dashboard = await this.client.getDashboard(dashboard_id);
-        const updatedCards = (dashboard.cards || []).filter(
+        const existingCards = dashboard.dashcards || (dashboard as any).cards || [];
+        const updatedCards = existingCards.filter(
           (card: any) => card.id !== dashcard_id
         );
-        
+
         await this.client.apiCall(
           "PUT",
           `/api/dashboard/${dashboard_id}/cards`,
@@ -671,7 +672,14 @@ export class DashboardToolHandlers {
       } catch (altError) {
         // Approach 3: Update entire dashboard cards array
         const dashboard = await this.client.getDashboard(dashboard_id);
-        const updatedCards = (dashboard.cards || []).map((card: any) => {
+        const existingCards = dashboard.dashcards || (dashboard as any).cards || [];
+        if (existingCards.length === 0) {
+          throw new McpError(
+            ErrorCode.InternalError,
+            "Cannot update dashboard card: no existing cards found on dashboard. Aborting to prevent wiping all cards."
+          );
+        }
+        const updatedCards = existingCards.map((card: any) => {
           if (card.id === dashcard_id) {
             return { ...card, ...updateFields };
           }
