@@ -107,6 +107,41 @@ export class CardToolHandlers {
         },
       },
       {
+        name: "get_card",
+        description:
+          "Get full details of a single Metabase question/card, including its query, display type, and visualization settings",
+        inputSchema: {
+          type: "object",
+          properties: {
+            card_id: {
+              type: "number",
+              description: "ID of the card to retrieve",
+            },
+          },
+          required: ["card_id"],
+        },
+      },
+      {
+        name: "duplicate_card",
+        description:
+          "Duplicate a Metabase question/card, optionally into a different collection",
+        inputSchema: {
+          type: "object",
+          properties: {
+            card_id: {
+              type: "number",
+              description: "ID of the card to duplicate",
+            },
+            collection_id: {
+              type: "number",
+              description:
+                "Target collection ID for the copy. If omitted, copies to the same collection as the original.",
+            },
+          },
+          required: ["card_id"],
+        },
+      },
+      {
         name: "execute_card",
         description: "Execute a Metabase question/card and get results",
         inputSchema: {
@@ -140,6 +175,12 @@ export class CardToolHandlers {
 
       case "delete_card":
         return await this.deleteCard(args);
+
+      case "get_card":
+        return await this.getCard(args);
+
+      case "duplicate_card":
+        return await this.duplicateCard(args);
 
       case "execute_card":
         return await this.executeCard(args);
@@ -242,6 +283,42 @@ export class CardToolHandlers {
           text: hard_delete
             ? `Card ${card_id} permanently deleted.`
             : `Card ${card_id} archived.`,
+        },
+      ],
+    };
+  }
+
+  private async getCard(args: any): Promise<any> {
+    const { card_id } = args;
+
+    if (!card_id) {
+      throw new McpError(ErrorCode.InvalidParams, "Card ID is required");
+    }
+
+    const card = await this.client.getCard(card_id);
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(card, null, 2),
+        },
+      ],
+    };
+  }
+
+  private async duplicateCard(args: any): Promise<any> {
+    const { card_id, collection_id } = args;
+
+    if (!card_id) {
+      throw new McpError(ErrorCode.InvalidParams, "Card ID is required");
+    }
+
+    const card = await this.client.copyCard(card_id, collection_id);
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(card, null, 2),
         },
       ],
     };

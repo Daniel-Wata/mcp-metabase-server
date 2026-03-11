@@ -144,6 +144,26 @@ export class MetabaseClient {
             await this.axiosInstance.put(`/api/card/${id}`, { archived: true });
         }
     }
+    async copyCard(id, collectionId) {
+        await this.ensureAuthenticated();
+        const data = {};
+        if (collectionId !== undefined)
+            data.collection_id = collectionId;
+        const response = await this.axiosInstance.post(`/api/card/${id}/copy`, data);
+        return response.data;
+    }
+    async copyDashboard(id, options) {
+        await this.ensureAuthenticated();
+        const data = {};
+        if (options.name !== undefined)
+            data.name = options.name;
+        if (options.collection_id !== undefined)
+            data.collection_id = options.collection_id;
+        if (options.is_deep_copy !== undefined)
+            data.is_deep_copy = options.is_deep_copy;
+        const response = await this.axiosInstance.post(`/api/dashboard/${id}/copy`, data);
+        return response.data;
+    }
     async executeCard(id, parameters = {}) {
         await this.ensureAuthenticated();
         const response = await this.axiosInstance.post(`/api/card/${id}/query`, {

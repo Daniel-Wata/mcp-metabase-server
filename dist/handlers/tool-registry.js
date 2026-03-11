@@ -61,6 +61,7 @@ export class ToolRegistry {
                 "set_dashboard_filters",
                 "wire_dashboard_filter_mappings",
                 "get_dashboard_filter_info",
+                "duplicate_dashboard",
             ].includes(name));
     }
     isCardTool(name) {
@@ -71,6 +72,8 @@ export class ToolRegistry {
                 "update_card",
                 "delete_card",
                 "execute_card",
+                "get_card",
+                "duplicate_card",
             ].includes(name));
     }
     isDatabaseTool(name) {

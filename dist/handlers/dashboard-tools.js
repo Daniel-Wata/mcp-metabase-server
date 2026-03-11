@@ -324,6 +324,28 @@ export class DashboardToolHandlers {
                     required: ["dashboard_id"],
                 },
             },
+            {
+                name: "duplicate_dashboard",
+                description: "Deep-copy a dashboard and all its cards into a target collection. Creates independent copies of every card, preserves the dashboard layout (card positions/sizes), filters, and filter wiring. The copied dashboard has zero references to the original cards.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        dashboard_id: {
+                            type: "number",
+                            description: "ID of the dashboard to duplicate",
+                        },
+                        name: {
+                            type: "string",
+                            description: "Name for the new dashboard. If omitted, uses the original name.",
+                        },
+                        collection_id: {
+                            type: "number",
+                            description: "Target collection ID for the new dashboard and its cards. If omitted, copies to the same collection as the original.",
+                        },
+                    },
+                    required: ["dashboard_id"],
+                },
+            },
         ];
     }
     async handleTool(name, args) {
@@ -350,6 +372,8 @@ export class DashboardToolHandlers {
                 return await this.wireDashboardFilterMappings(args);
             case "get_dashboard_filter_info":
                 return await this.getDashboardFilterInfo(args);
+            case "duplicate_dashboard":
+                return await this.duplicateDashboard(args);
             default:
                 throw new McpError(ErrorCode.MethodNotFound, `Unknown dashboard tool: ${name}`);
         }
@@ -706,6 +730,45 @@ export class DashboardToolHandlers {
                 {
                     type: "text",
                     text: JSON.stringify(info, null, 2),
+                },
+            ],
+        };
+    }
+    async duplicateDashboard(args) {
+        const { dashboard_id, name, collection_id } = args;
+        if (!dashboard_id) {
+            throw new McpError(ErrorCode.InvalidParams, "Dashboard ID is required");
+        }
+        // Use Metabase's built-in deep copy endpoint
+        const newDashboard = await this.client.copyDashboard(dashboard_id, {
+            name,
+            collection_id,
+            is_deep_copy: true,
+        });
+        // Read the new dashboard to get full details including card mapping
+        const fullDashboard = await this.client.getDashboard(newDashboard.id);
+        // Build a summary with the card ID mapping
+        const dashcards = (fullDashboard.dashcards || []).map((dc) => ({
+            dashcard_id: dc.id,
+            card_id: dc.card_id,
+            card_name: dc.card?.name || null,
+            row: dc.row,
+            col: dc.col,
+            size_x: dc.size_x ?? dc.sizeX,
+            size_y: dc.size_y ?? dc.sizeY,
+        }));
+        const result = {
+            new_dashboard_id: newDashboard.id,
+            name: fullDashboard.name,
+            collection_id: fullDashboard.collection_id,
+            parameters: fullDashboard.parameters || [],
+            dashcards,
+        };
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: JSON.stringify(result, null, 2),
                 },
             ],
         };

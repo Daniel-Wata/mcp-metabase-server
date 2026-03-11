@@ -191,6 +191,38 @@ export class MetabaseClient {
     }
   }
 
+  async copyCard(
+    id: number,
+    collectionId?: number
+  ): Promise<Card> {
+    await this.ensureAuthenticated();
+    const data: any = {};
+    if (collectionId !== undefined) data.collection_id = collectionId;
+    const response = await this.axiosInstance.post(
+      `/api/card/${id}/copy`,
+      data
+    );
+    return response.data;
+  }
+
+  async copyDashboard(
+    id: number,
+    options: { name?: string; collection_id?: number; is_deep_copy?: boolean }
+  ): Promise<Dashboard> {
+    await this.ensureAuthenticated();
+    const data: any = {};
+    if (options.name !== undefined) data.name = options.name;
+    if (options.collection_id !== undefined)
+      data.collection_id = options.collection_id;
+    if (options.is_deep_copy !== undefined)
+      data.is_deep_copy = options.is_deep_copy;
+    const response = await this.axiosInstance.post(
+      `/api/dashboard/${id}/copy`,
+      data
+    );
+    return response.data;
+  }
+
   async executeCard(id: number, parameters: any = {}): Promise<QueryResult> {
     await this.ensureAuthenticated();
     const response = await this.axiosInstance.post(`/api/card/${id}/query`, {
