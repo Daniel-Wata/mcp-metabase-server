@@ -215,6 +215,131 @@ export class DashboardToolHandlers {
           required: ["dashboard_id", "dashcard_id"],
         },
       },
+      {
+        name: "set_dashboard_filters",
+        description:
+          "Add or replace filter parameters on a dashboard. These are the filter widgets that appear at the top of the dashboard (e.g., date pickers, dropdowns). Use wire_dashboard_filter_mappings to connect them to cards.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            dashboard_id: {
+              type: "number",
+              description: "ID of the dashboard",
+            },
+            filters: {
+              type: "array",
+              description:
+                'Array of filter parameter objects. Each needs: id (unique string), name (display label), slug (URL param name), type (e.g., "string/=" for dropdowns, "date/single" for date pickers). Add sectionId: "date" for date filters.',
+              items: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "string",
+                    description:
+                      "Unique identifier for this filter (used when wiring mappings)",
+                  },
+                  name: {
+                    type: "string",
+                    description: "Display name shown on the dashboard",
+                  },
+                  slug: {
+                    type: "string",
+                    description: "URL parameter name for this filter",
+                  },
+                  type: {
+                    type: "string",
+                    description:
+                      'Filter type: "string/=" for text/dropdown, "date/single" for single date, "date/all-options" for date range (only safe with dimension tags on non-GROUP-BY queries)',
+                  },
+                  sectionId: {
+                    type: "string",
+                    description:
+                      'Set to "date" for date-type filters to group them in the date section',
+                  },
+                },
+                required: ["id", "name", "slug", "type"],
+              },
+            },
+          },
+          required: ["dashboard_id", "filters"],
+        },
+      },
+      {
+        name: "wire_dashboard_filter_mappings",
+        description:
+          'Connect dashboard filters to card template tags. Each dashcard mapping specifies which filter parameters map to which template tags in the card\'s SQL. Use tag_type "variable" for text/date template tags (safe for all queries), or "dimension" for dimension-type tags (only safe on queries WITHOUT GROUP BY).',
+        inputSchema: {
+          type: "object",
+          properties: {
+            dashboard_id: {
+              type: "number",
+              description: "ID of the dashboard",
+            },
+            dashcard_mappings: {
+              type: "array",
+              description:
+                "Array of dashcard mapping specs. Only include dashcards that need mappings — others are left unchanged.",
+              items: {
+                type: "object",
+                properties: {
+                  dashcard_id: {
+                    type: "number",
+                    description:
+                      "ID of the dashboard card (not the card ID — use get_dashboard_filter_info to find these)",
+                  },
+                  card_id: {
+                    type: "number",
+                    description: "ID of the underlying card/question",
+                  },
+                  mappings: {
+                    type: "array",
+                    description: "Array of individual parameter-to-tag mappings",
+                    items: {
+                      type: "object",
+                      properties: {
+                        parameter_id: {
+                          type: "string",
+                          description:
+                            "ID of the dashboard filter parameter (from set_dashboard_filters)",
+                        },
+                        tag: {
+                          type: "string",
+                          description:
+                            "Name of the template tag in the card's SQL query",
+                        },
+                        tag_type: {
+                          type: "string",
+                          enum: ["variable", "dimension"],
+                          description:
+                            '"variable" for text/date tags (safe for GROUP BY queries), "dimension" for dimension tags (breaks GROUP BY — only use on scalar/CTE queries)',
+                        },
+                      },
+                      required: ["parameter_id", "tag", "tag_type"],
+                    },
+                  },
+                },
+                required: ["dashcard_id", "card_id", "mappings"],
+              },
+            },
+          },
+          required: ["dashboard_id", "dashcard_mappings"],
+        },
+      },
+      {
+        name: "get_dashboard_filter_info",
+        description:
+          "Get a compact summary of a dashboard's filter parameters and dashcard IDs with their current mappings. Use this to plan filter wiring — it returns only the fields needed for set_dashboard_filters and wire_dashboard_filter_mappings, not the full dashboard payload.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            dashboard_id: {
+              type: "number",
+              description: "ID of the dashboard",
+            },
+          },
+          required: ["dashboard_id"],
+        },
+      },
     ];
   }
 
@@ -243,6 +368,15 @@ export class DashboardToolHandlers {
 
       case "update_dashboard_card":
         return await this.updateDashboardCard(args);
+
+      case "set_dashboard_filters":
+        return await this.setDashboardFilters(args);
+
+      case "wire_dashboard_filter_mappings":
+        return await this.wireDashboardFilterMappings(args);
+
+      case "get_dashboard_filter_info":
+        return await this.getDashboardFilterInfo(args);
 
       default:
         throw new McpError(
@@ -518,7 +652,7 @@ export class DashboardToolHandlers {
     }
 
     let result;
-    
+
     try {
       // Approach 1: Direct PUT to specific card
       result = await this.client.apiCall(
@@ -543,7 +677,7 @@ export class DashboardToolHandlers {
           }
           return card;
         });
-        
+
         result = await this.client.apiCall(
           "PUT",
           `/api/dashboard/${dashboard_id}/cards`,
@@ -557,6 +691,182 @@ export class DashboardToolHandlers {
         {
           type: "text",
           text: JSON.stringify(result, null, 2),
+        },
+      ],
+    };
+  }
+
+  private async setDashboardFilters(args: any): Promise<any> {
+    const { dashboard_id, filters } = args;
+
+    if (!dashboard_id) {
+      throw new McpError(ErrorCode.InvalidParams, "Dashboard ID is required");
+    }
+    if (!filters || !Array.isArray(filters) || filters.length === 0) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        "filters must be a non-empty array of parameter objects"
+      );
+    }
+
+    const dashboard = await this.client.updateDashboard(dashboard_id, {
+      parameters: filters,
+    });
+
+    const params = (dashboard as any).parameters || [];
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              status: "ok",
+              dashboard_id,
+              filters_set: params.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                type: p.type,
+              })),
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
+
+  private async wireDashboardFilterMappings(args: any): Promise<any> {
+    const { dashboard_id, dashcard_mappings } = args;
+
+    if (!dashboard_id) {
+      throw new McpError(ErrorCode.InvalidParams, "Dashboard ID is required");
+    }
+    if (
+      !dashcard_mappings ||
+      !Array.isArray(dashcard_mappings) ||
+      dashcard_mappings.length === 0
+    ) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        "dashcard_mappings must be a non-empty array"
+      );
+    }
+
+    // Get current dashboard to preserve positions for all dashcards
+    const dashboard = await this.client.getDashboard(dashboard_id);
+    const dashcardLookup = new Map<number, any>();
+    for (const dc of dashboard.dashcards || []) {
+      dashcardLookup.set(dc.id, dc);
+    }
+
+    // Build mapping specs indexed by dashcard_id
+    const specsByDashcard = new Map<number, any>();
+    for (const spec of dashcard_mappings) {
+      specsByDashcard.set(spec.dashcard_id, spec);
+    }
+
+    // Build the full cards array — update specified dashcards, preserve others
+    const cards = [];
+    for (const dc of dashboard.dashcards || []) {
+      const dcAny = dc as any;
+      const sizeX = dcAny.size_x ?? dcAny.sizeX;
+      const sizeY = dcAny.size_y ?? dcAny.sizeY;
+      const spec = specsByDashcard.get(dc.id);
+      if (spec) {
+        const parameterMappings = spec.mappings.map((m: any) => ({
+          parameter_id: m.parameter_id,
+          card_id: spec.card_id,
+          target: [
+            m.tag_type === "dimension" ? "dimension" : "variable",
+            ["template-tag", m.tag],
+          ],
+        }));
+
+        cards.push({
+          id: dc.id,
+          card_id: spec.card_id,
+          row: dc.row,
+          col: dc.col,
+          size_x: sizeX,
+          size_y: sizeY,
+          parameter_mappings: parameterMappings,
+        });
+      } else {
+        // Preserve existing dashcard as-is
+        cards.push({
+          id: dc.id,
+          card_id: dc.card_id,
+          row: dc.row,
+          col: dc.col,
+          size_x: sizeX,
+          size_y: sizeY,
+          parameter_mappings: dcAny.parameter_mappings || [],
+        });
+      }
+    }
+
+    await this.client.apiCall(
+      "PUT",
+      `/api/dashboard/${dashboard_id}/cards`,
+      { cards }
+    );
+
+    // Return compact summary
+    const summary = cards.map((c: any) => ({
+      dashcard_id: c.id,
+      card_id: c.card_id,
+      mappings_count: c.parameter_mappings.length,
+      mapped_filters: c.parameter_mappings.map(
+        (m: any) => m.parameter_id
+      ),
+    }));
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            { status: "ok", dashboard_id, dashcards: summary },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
+
+  private async getDashboardFilterInfo(args: any): Promise<any> {
+    const { dashboard_id } = args;
+
+    if (!dashboard_id) {
+      throw new McpError(ErrorCode.InvalidParams, "Dashboard ID is required");
+    }
+
+    const dashboard = await this.client.getDashboard(dashboard_id);
+
+    const info = {
+      dashboard_id,
+      parameters: (dashboard as any).parameters || [],
+      dashcards: (dashboard.dashcards || []).map((dc: any) => ({
+        dashcard_id: dc.id,
+        card_id: dc.card_id,
+        card_name: dc.card?.name || null,
+        row: dc.row,
+        col: dc.col,
+        size: `${dc.size_x ?? dc.sizeX}x${dc.size_y ?? dc.sizeY}`,
+        current_mappings: (dc.parameter_mappings || []).map((m: any) => ({
+          parameter_id: m.parameter_id,
+          target: m.target,
+        })),
+      })),
+    };
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(info, null, 2),
         },
       ],
     };

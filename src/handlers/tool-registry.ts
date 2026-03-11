@@ -68,6 +68,9 @@ export class ToolRegistry {
         "add_card_to_dashboard",
         "remove_card_from_dashboard",
         "update_dashboard_card",
+        "set_dashboard_filters",
+        "wire_dashboard_filter_mappings",
+        "get_dashboard_filter_info",
       ].includes(name)
     );
   }
