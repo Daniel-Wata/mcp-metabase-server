@@ -217,36 +217,28 @@ npm run watch
 
 ## Installation & Usage
 
-### Method 1: Using npx (Recommended)
+### Method 1: Using npx from GitHub (Recommended)
 
-The easiest way to run the server is using npx:
+The easiest way to run the server — no cloning or building required:
 
 ```bash
 # Set environment variables
 export METABASE_URL=https://your-metabase-instance.com
 export METABASE_API_KEY=your_metabase_api_key
 
-# Run the server
-npx @easecloudio/mcp-metabase-server
+# Run the server directly from GitHub
+npx github:Daniel-Wata/mcp-metabase-server
 ```
 
-### Method 2: Using Node.js directly
-
-If you have the package installed locally or globally:
+### Method 2: Using Claude Code CLI
 
 ```bash
-# Install globally
-npm install -g @easecloudio/mcp-metabase-server
-
-# Set environment variables
-export METABASE_URL=https://your-metabase-instance.com
-export METABASE_API_KEY=your_metabase_api_key
-
-# Run the server
-mcp-metabase-server
+claude mcp add metabase -- npx github:Daniel-Wata/mcp-metabase-server
 ```
 
-Or run from the built project:
+Then add environment variables to your project's `.mcp.json`.
+
+### Method 3: Clone and run locally
 
 ```bash
 # Clone and build the project
@@ -263,7 +255,7 @@ export METABASE_API_KEY=your_metabase_api_key
 node dist/index.js
 ```
 
-### Method 3: Using Docker
+### Method 4: Using Docker
 
 You can run the server using Docker:
 
@@ -306,31 +298,12 @@ To use with Claude Desktop, add the server config:
 On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
-#### Using npx:
-
 ```json
 {
   "mcpServers": {
-    "metabase-server": {
+    "metabase": {
       "command": "npx",
-      "args": ["@easecloudio/mcp-metabase-server"],
-      "env": {
-        "METABASE_URL": "https://your-metabase-instance.com",
-        "METABASE_API_KEY": "your_metabase_api_key"
-      }
-    }
-  }
-}
-```
-
-#### Using Node.js directly:
-
-```json
-{
-  "mcpServers": {
-    "metabase-server": {
-      "command": "node",
-      "args": ["/path/to/metabase-server/dist/index.js"],
+      "args": ["github:Daniel-Wata/mcp-metabase-server"],
       "env": {
         "METABASE_URL": "https://your-metabase-instance.com",
         "METABASE_API_KEY": "your_metabase_api_key"
@@ -345,9 +318,9 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 ```json
 {
   "mcpServers": {
-    "metabase-server": {
+    "metabase": {
       "command": "npx",
-      "args": ["@easecloudio/mcp-metabase-server"],
+      "args": ["github:Daniel-Wata/mcp-metabase-server"],
       "env": {
         "METABASE_URL": "https://your-metabase-instance.com",
         "METABASE_USERNAME": "your_username",
@@ -356,6 +329,31 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
     }
   }
 }
+```
+
+### Integration with Claude Code
+
+Add to your project's `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "metabase": {
+      "command": "npx",
+      "args": ["github:Daniel-Wata/mcp-metabase-server"],
+      "env": {
+        "METABASE_URL": "https://your-metabase-instance.com",
+        "METABASE_API_KEY": "your_metabase_api_key"
+      }
+    }
+  }
+}
+```
+
+Or use the CLI:
+
+```bash
+claude mcp add metabase -- npx github:Daniel-Wata/mcp-metabase-server
 ```
 
 ### Environment Variables
